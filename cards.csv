@@ -1,0 +1,5 @@
+id,name,set,value,image_path
+001,Pikachu,Jungle,15.00,data/pikachu.png
+002,Charizard V,Celebration,300.00,data/charizard.png
+003,Squirtle,Promo,5,data/squirtle.png
+004,Mewtwo,Evolution,15,data/mewtwo.png
