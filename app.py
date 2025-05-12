@@ -7,6 +7,48 @@ import faiss
 import os
 from utils import load_clip_model, get_clip_embedding
 from sam_utils import get_card_crops
+import plotly.graph_objects as go
+from io import BytesIO
+import pandas as pd
+
+# Load card database with price history
+def load_card_db():
+    card_db = pd.read_csv("cards.csv")
+    card_db["price_history"] = card_db["price_history"].apply(lambda x: eval(x))  # Convert JSON string to list
+    return card_db
+
+# Update the existing card_db loading logic
+@st.cache_resource
+def load_index():
+    index = faiss.read_index("clip.index")
+    card_db = load_card_db()
+    return index, card_db
+
+
+# Function to generate an interactive price history chart using Plotly
+def generate_price_chart(card_name, card_db):
+    card = card_db[card_db["name"] == card_name]
+    if card.empty:
+        return None
+
+    prices = card.iloc[0]["price_history"]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=list(range(1, len(prices) + 1)),
+        y=prices,
+        mode='lines+markers',
+        line=dict(color='blue'),
+        marker=dict(size=8),
+        name='Price'
+    ))
+    fig.update_layout(
+        title=f"Price History: {card_name}",
+        xaxis_title="Time",
+        yaxis_title="Price ($)",
+        template="plotly_white",
+        height=300
+    )
+    return fig
 
 # Load everything at startup
 st.set_page_config(layout="wide")
@@ -22,12 +64,12 @@ st.markdown("""
 - **Versatile Product Matching**: Supports recognition and matching of various types of trading cards and collectibles.
 """)
 
-@st.cache_resource
-def load_index():
-    index = faiss.read_index("clip.index")
-    with open("card_db.pkl", "rb") as f:
-        card_db = pickle.load(f)
-    return index, card_db
+# @st.cache_resource
+# def load_index():
+#     index = faiss.read_index("clip.index")
+#     with open("card_db.pkl", "rb") as f:
+#         card_db = pickle.load(f)
+#     return index, card_db
 
 @st.cache_resource
 def load_models():
@@ -46,7 +88,6 @@ if uploaded_file:
 
 
     # Display the updated all_masks_with_info.png
-    # st.write("### Masks Visualization")
     cols = st.columns(2)
 
     with cols[0]:
@@ -85,6 +126,13 @@ if uploaded_file:
                     D, I = index.search(np.array([emb], dtype="float32"), k=1)
                     match = card_db.iloc[I[0][0]]
                     st.success(f"✅ {match['name']} ({match['set']}) - ${match['value']}")
+
+                    # Generate and display interactive price history chart
+                    chart_fig = generate_price_chart(match['name'], card_db)
+                    if chart_fig:
+                        st.plotly_chart(chart_fig, use_container_width=True)
+                    else:
+                        st.warning("⚠️ No price history available.")
                 except Exception as e:
                     st.error(f"❌ Match failed: {e}")
     else:

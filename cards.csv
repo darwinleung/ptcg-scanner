@@ -1,9 +1,9 @@
-id,name,set,value,image_path
-001,Pikachu,Jungle,15.00,data/pikachu.png
-002,Charizard V,Celebration,300.00,data/charizard.png
-003,Squirtle,Promo,5,data/squirtle.png
-004,Mewtwo,Evolution,15,data/mewtwo.png
-005,Blastoise,Base Set,500,data/blastoise.png
-006,Charmander,Shining Fates,50,data/charmander.png
-007,Charizard EX,EX Series,90,data/charizardex.png
-008,Magikarp,Paldea Evolved,300,data/magikarp.png
+id,name,set,value,image_path,price_history
+001,Pikachu,Jungle,15.00,data/pikachu.png,"[10, 12, 15, 14, 15]"
+002,Charizard V,Celebration,300.00,data/charizard.png,"[280, 290, 300, 310, 300]"
+003,Squirtle,Promo,5,data/squirtle.png,"[4, 5, 3, 3.5, 5]"
+004,Mewtwo,Evolution,15,data/mewtwo.png,"[14, 15, 15, 16, 15]"
+005,Blastoise,Base Set,500,data/blastoise.png,"[480, 490, 500, 510, 500]"
+006,Charmander,Shining Fates,50,data/charmander.png,"[45, 48, 50, 52, 50]"
+007,Charizard EX,EX Series,90,data/charizardex.png,"[85, 88, 90, 92, 90]"
+008,Magikarp,Paldea Evolved,300,data/magikarp.png,"[280, 290, 300, 310, 300]"
