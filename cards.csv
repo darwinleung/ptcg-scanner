@@ -3,3 +3,7 @@ id,name,set,value,image_path
 002,Charizard V,Celebration,300.00,data/charizard.png
 003,Squirtle,Promo,5,data/squirtle.png
 004,Mewtwo,Evolution,15,data/mewtwo.png
+005,Blastoise,Base Set,500,data/blastoise.png
+006,Charmander,Shining Fates,50,data/charmander.png
+007,Charizard EX,EX Series,90,data/charizardex.png
+008,Magikarp,Paldea Evolved,300,data/magikarp.png

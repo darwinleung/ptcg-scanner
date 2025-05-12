@@ -79,31 +79,3 @@ valid_df = pd.DataFrame(valid_rows)
 with open("card_db.pkl", "wb") as f:
     pickle.dump(valid_df, f)
 print("✅ Saved metadata to card_db.pkl")
-
-
-# # --- one-liner test ---
-
-# from PIL import Image
-# from utils import load_clip_model, get_clip_embedding
-
-# model, processor = load_clip_model()
-# img = Image.open("data/pikachu.png").convert("RGB").resize((224, 224))
-# emb = get_clip_embedding(img, model, processor)
-# print(emb.shape)
-
-# # ---
-
-# import numpy as np
-
-# # Example with 1 embedding
-# import pickle
-
-# embedding = emb.reshape(1, -1).astype("float32")  # emb from your previous test
-# print(embedding.shape)
-
-# import faiss
-# index = faiss.IndexFlatL2(embedding.shape[1])
-# index.add(embedding)
-# faiss.write_index(index, "clip_test.index")
-
-# print("✅ FAISS index built and saved.")

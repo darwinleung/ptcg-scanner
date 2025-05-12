@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
 # Visualization function kept for debugging purposes
-"""
+
 def visualize_masks(image, masks, title="Masks", save_path=None, filter_info=None):
     plt.figure(figsize=(15, 15))
     plt.imshow(image)
@@ -39,7 +39,7 @@ def visualize_masks(image, masks, title="Masks", save_path=None, filter_info=Non
         plt.close()
     else:
         plt.show()
-"""
+
 
 def load_sam():
     """
@@ -83,7 +83,7 @@ def preprocess_image(pil_img, max_size=1024):
         return np.array(pil_img), scale
     return np.array(pil_img), 1.0
 
-def get_card_crops(pil_img, visualize=False):
+def get_card_crops(pil_img, visualize=True):
     """
     Segment Pokemon cards from an image and return individual card crops.
     """
@@ -101,11 +101,11 @@ def get_card_crops(pil_img, visualize=False):
     # Generate masks using SAM
     masks = mask_generator.generate(image)
     
-    """
+    
     if visualize:
         visualize_masks(image, masks, title="Original SAM Masks", 
                        save_path="original_masks.png")
-    """
+    
 
     def filter_card_masks(masks, img_height, img_width):
         """
@@ -190,7 +190,7 @@ def get_card_crops(pil_img, visualize=False):
 
     filtered_cards, filter_info = filter_card_masks(masks, img_height, img_width)
     
-    """
+    
     if visualize:
         filtered_masks = [card['mask'] for card in filtered_cards]
         visualize_masks(image, filtered_masks, title="Filtered Masks", 
@@ -198,7 +198,7 @@ def get_card_crops(pil_img, visualize=False):
         visualize_masks(image, masks, title="All Masks with Filtering Info", 
                        save_path="all_masks_with_info.png",
                        filter_info=filter_info)
-    """
+    
 
     # Create card crops
     card_crops = []
