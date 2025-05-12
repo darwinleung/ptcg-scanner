@@ -46,13 +46,15 @@ if uploaded_file:
     # # Segment and crop cards using SAM
     # st.write("🪄 Segmenting cards...")
     # crops = get_card_crops(image)
-
-    
-
     with cols[1]:
         # Segment and crop cards using SAM
-        st.write("🪄 Segmenting cards...")
-        crops = get_card_crops(image)
+        # Center the spinner and segmenting cards message horizontally and vertically
+        with st.container():
+            st.write("\n" * 10)  # Add vertical spacing to center the spinner
+            cols = st.columns([1, 2, 1])  # Add horizontal spacing with columns
+            with cols[1]:
+                with st.spinner("🪄 Segmenting cards..."):
+                    crops = get_card_crops(image)
         if os.path.exists("all_masks_with_info.png"):
             masks_image = Image.open("all_masks_with_info.png")
             st.image(masks_image, caption="All Masks with Info", use_column_width=True)
