@@ -66,20 +66,37 @@ def load_sam():
 
 mask_generator = load_sam()
 
+def preprocess_image(pil_img, max_size=1024):
+    """
+    Preprocess image for optimal SAM performance while maintaining aspect ratio
+    Returns:
+        preprocessed image, scale factor
+    """
+    # Get original size
+    w, h = pil_img.size
+    
+    # Calculate new size maintaining aspect ratio
+    scale = min(max_size/w, max_size/h)
+    if scale < 1:
+        new_w, new_h = int(w*scale), int(h*scale)
+        pil_img = pil_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        return np.array(pil_img), scale
+    return np.array(pil_img), 1.0
+
 def get_card_crops(pil_img, visualize=False):
     """
     Segment Pokemon cards from an image and return individual card crops.
-    Args:
-        pil_img: PIL Image containing one or more Pokemon cards
-        visualize: if True, show visualizations of masks (for debugging)
-    Returns:
-        List of PIL Images, each containing a single card
     """
-    image = np.array(pil_img)
+    # Preprocess image
+    image, scale = preprocess_image(pil_img)
     img_height, img_width = image.shape[:2]
     
-    # Adjust min_mask_region_area based on image orientation
-    mask_generator.min_mask_region_area = 600000 if img_height > img_width else 500000
+    # Scale the min_mask_region_area based on the preprocessing scale
+    original_area = 600000 if img_height > img_width else 500000
+    scaled_area = int(original_area * (scale * scale))
+    
+    # Adjust min_mask_region_area based on scaled image
+    mask_generator.min_mask_region_area = scaled_area
     
     # Generate masks using SAM
     masks = mask_generator.generate(image)

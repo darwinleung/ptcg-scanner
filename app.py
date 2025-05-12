@@ -46,7 +46,7 @@ if uploaded_file:
 
         for i, crop in enumerate(crops):
             with cols[i]:
-                st.image(crop, caption=f"Card {i+1}", width=180)
+                st.image(crop, caption=f"Card {i+1 }", width=180)
 
                 try:
                     emb = get_clip_embedding(crop.resize((224, 224)), clip_model, clip_processor)
