@@ -10,8 +10,17 @@ from sam_utils import get_card_crops
 
 # Load everything at startup
 st.set_page_config(layout="wide")
-st.title("Multi-item image recognition scanner")
-st.text("This is powered by SAM, CLIP, and FAISS, specifically trained on Pokémon cards.")
+st.title("TCG Card Recognition and Matching Tool")
+st.markdown("""
+### Powered by:
+- **SAM (Segment Anything Model)**: Used for precise segmentation and cropping of cards from the uploaded image.
+- **CLIP (Contrastive Language–Image Pretraining)**: Utilized for generating embeddings to match card images with the database.
+- **FAISS (Facebook AI Similarity Search)**: Enables efficient similarity search to find the closest match in the card database.
+
+### Key Features:
+- **Multi-Item Detection**: Capable of detecting and processing multiple cards in a single image.
+- **Versatile Product Matching**: Supports recognition and matching of various types of trading cards and collectibles.
+""")
 
 @st.cache_resource
 def load_index():
@@ -37,7 +46,7 @@ if uploaded_file:
 
 
     # Display the updated all_masks_with_info.png
-    st.write("### Masks Visualization")
+    # st.write("### Masks Visualization")
     cols = st.columns(2)
 
     with cols[0]:
