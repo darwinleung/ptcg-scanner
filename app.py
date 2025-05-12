@@ -10,11 +10,15 @@ from sam_utils import get_card_crops
 import plotly.graph_objects as go
 from io import BytesIO
 import pandas as pd
+import json
 
-# Load card database with price history
+# Load card database with price history and parse JSON
 def load_card_db():
     card_db = pd.read_csv("cards.csv")
-    card_db["price_history"] = card_db["price_history"].apply(lambda x: eval(x))  # Convert JSON string to list
+    # Ensure price_history is parsed correctly as a dictionary
+    card_db["price_history"] = card_db["price_history"].apply(
+        lambda x: json.loads(x) if isinstance(x, str) else x
+    )
     return card_db
 
 # Update the existing card_db loading logic
@@ -31,22 +35,37 @@ def generate_price_chart(card_name, card_db):
     if card.empty:
         return None
 
-    prices = card.iloc[0]["price_history"]
+    price_history = card.iloc[0]["price_history"]
+    dates = price_history["dates"]
+    prices = price_history["prices"]
+
+    # Ensure all data points are included in the chart
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=list(range(1, len(prices) + 1)),
+        x=dates,
         y=prices,
         mode='lines+markers',
-        line=dict(color='blue'),
-        marker=dict(size=8),
-        name='Price'
+        line=dict(color='#636EFA', width=2),
+        # marker=dict(size=8, color='#EF553B', symbol='circle'),
+        name='Price',
+        hovertemplate='<b>Date:</b> %{x}<br><b>Price:</b> $%{y}<extra></extra>'
     ))
     fig.update_layout(
-        title=f"Price History: {card_name}",
-        xaxis_title="Time",
+        title={
+            'text': f"Price History: {card_name}",
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        xaxis_title="Date",
         yaxis_title="Price ($)",
+        xaxis=dict(showgrid=True, gridcolor='lightgrey', tickformat='%b %d, %Y'),
+        yaxis=dict(showgrid=True, gridcolor='lightgrey'),
         template="plotly_white",
-        height=300
+        height=400,
+        margin=dict(l=40, r=40, t=60, b=40),
+        hovermode="x unified"
     )
     return fig
 
