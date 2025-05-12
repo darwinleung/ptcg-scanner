@@ -32,11 +32,32 @@ uploaded_file = st.file_uploader("Upload an image with multiple cards", type=["p
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    # st.write("### Uploaded Image")
+    # st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Segment and crop cards using SAM
-    st.write("🪄 Segmenting cards...")
-    crops = get_card_crops(image)
+
+    # Display the updated all_masks_with_info.png
+    st.write("### Masks Visualization")
+    cols = st.columns(2)
+
+    with cols[0]:
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+
+    # # Segment and crop cards using SAM
+    # st.write("🪄 Segmenting cards...")
+    # crops = get_card_crops(image)
+
+    
+
+    with cols[1]:
+        # Segment and crop cards using SAM
+        st.write("🪄 Segmenting cards...")
+        crops = get_card_crops(image)
+        if os.path.exists("all_masks_with_info.png"):
+            masks_image = Image.open("all_masks_with_info.png")
+            st.image(masks_image, caption="All Masks with Info", use_column_width=True)
+        else:
+            st.warning("⚠️ Masks visualization not found.")
 
     num_crops = len(crops)
     st.write(f"📦 Detected {num_crops} card(s)")

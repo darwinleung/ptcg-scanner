@@ -102,11 +102,6 @@ def get_card_crops(pil_img, visualize=True):
     masks = mask_generator.generate(image)
     
     
-    if visualize:
-        visualize_masks(image, masks, title="Original SAM Masks", 
-                       save_path="original_masks.png")
-    
-
     def filter_card_masks(masks, img_height, img_width):
         """
         Filter masks based on:
@@ -191,13 +186,19 @@ def get_card_crops(pil_img, visualize=True):
     filtered_cards, filter_info = filter_card_masks(masks, img_height, img_width)
     
     
+    def visualize_with_params(image, masks, title, save_path, filter_info=None):
+        """
+        Helper function to visualize masks with given parameters.
+        """
+        visualize_masks(image, masks, title=title, save_path=save_path, filter_info=filter_info)
+
+    # Refactor visualization calls
     if visualize:
+        visualize_with_params(image, masks, "Original SAM Masks", "original_masks.png")
+
         filtered_masks = [card['mask'] for card in filtered_cards]
-        visualize_masks(image, filtered_masks, title="Filtered Masks", 
-                       save_path="filtered_masks.png")
-        visualize_masks(image, masks, title="All Masks with Filtering Info", 
-                       save_path="all_masks_with_info.png",
-                       filter_info=filter_info)
+        visualize_with_params(image, filtered_masks, "Filtered Masks", "filtered_masks.png")
+        visualize_with_params(image, masks, "All Masks with Filtering Info", "all_masks_with_info.png", filter_info=filter_info)
     
 
     # Create card crops
