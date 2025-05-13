@@ -13,3 +13,4 @@ ftfy
 regex
 tqdm
 transformers
+plotly
