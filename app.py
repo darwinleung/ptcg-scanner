@@ -44,9 +44,8 @@ def generate_price_chart(card_name, card_db):
     fig.add_trace(go.Scatter(
         x=dates,
         y=prices,
-        mode='lines+markers',
-        line=dict(color='#636EFA', width=2),
-        # marker=dict(size=8, color='#EF553B', symbol='circle'),
+        mode='lines',  # Use smooth lines without markers
+        line=dict(shape='spline',color='orange', width=2),  # Set line color to orange
         name='Price',
         hovertemplate='<b>Date:</b> %{x}<br><b>Price:</b> $%{y}<extra></extra>'
     ))
@@ -64,6 +63,7 @@ def generate_price_chart(card_name, card_db):
         yaxis=dict(showgrid=True, gridcolor='lightgrey'),
         template="plotly_white",
         height=400,
+        width=400,  # Set the chart width to 400
         margin=dict(l=40, r=40, t=60, b=40),
         hovermode="x unified"
     )
@@ -71,12 +71,14 @@ def generate_price_chart(card_name, card_db):
 
 # Function to display card details in a list style
 def display_card_details(card):
-    st.markdown(f"""
-    **:orange[Card Name]**: {card['name']}  
-    **:orange[Set]**: {card['set']}  
-    **:orange[Current Market Price]**: CAD${card['value']}  
-    **:orange[Condition]**: {card['condition']}  
-    """)
+    # Add a title for the card details
+    st.markdown("### Card Details")
+
+    # Display each card detail with the attribute in orange
+    st.markdown(f"<span style='color: orange; font-weight: bold;'>Card Name:</span> {card['name']}", unsafe_allow_html=True)
+    st.markdown(f"<span style='color: orange; font-weight: bold;'>Set:</span> {card['set']}", unsafe_allow_html=True)
+    st.markdown(f"<span style='color: orange; font-weight: bold;'>Current Market Price:</span> CAD$ {card['value']}", unsafe_allow_html=True)
+    st.markdown(f"<span style='color: orange; font-weight: bold;'>Condition:</span> {card['condition']}", unsafe_allow_html=True)
 
 # Load everything at startup
 st.set_page_config(layout="wide")
@@ -111,27 +113,19 @@ uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
-    # st.write("### Uploaded Image")
-    # st.image(image, caption="Uploaded Image", use_column_width=True)
 
-
-    # Display the updated all_masks_with_info.png
+    # Display the uploaded image
     cols = st.columns(2)
-
     with cols[0]:
         st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # # Segment and crop cards using SAM
-    # st.write("🪄 Segmenting cards...")
-    # crops = get_card_crops(image)
+    # Segment and crop cards using SAM
     with cols[1]:
-        # Segment and crop cards using SAM
-        # Center the spinner and segmenting cards message horizontally and vertically
         with st.container():
             st.write("\n" * 10)  # Add vertical spacing to center the spinner
             cols = st.columns([1, 2, 1])  # Add horizontal spacing with columns
             with cols[1]:
-                with st.spinner("🪄 Segmenting cards..."):
+                with st.spinner("#### 🪄 Segmenting cards..."):
                     crops = get_card_crops(image)
         if os.path.exists("all_masks_with_info.png"):
             masks_image = Image.open("all_masks_with_info.png")
@@ -140,36 +134,44 @@ if uploaded_file:
             st.warning("⚠️ Masks visualization not found.")
 
     num_crops = len(crops)
-    st.write(f"📦 Detected {num_crops} card(s)")
+    st.write(f"#### 📦 Detected {num_crops} card(s)")
 
     if num_crops > 0:
-        cols = st.columns(num_crops)
-
         for i, crop in enumerate(crops):
-            with cols[i]:
-                st.image(crop, caption=f"Card {i+1 }", width=180)
+            # Create two columns for the images (cropped card and matched card)
+            img_col1, img_col2 = st.columns(2)
 
-                try:
-                    emb = get_clip_embedding(crop.resize((224, 224)), clip_model, clip_processor)
-                    D, I = index.search(np.array([emb], dtype="float32"), k=1)
-                    match = card_db.iloc[I[0][0]]
+            with img_col1:
+                st.write(f"**Card {i+1}**")
+                st.image(crop, use_column_width=True)
 
-                    # Create two columns: one for the mask image and one for the card details
-                    col1, col2 = st.columns([1, 2])
+            try:
+                # Get the embedding and search for the match
+                emb = get_clip_embedding(crop.resize((224, 224)), clip_model, clip_processor)
+                D, I = index.search(np.array([emb], dtype="float32"), k=1)
+                match = card_db.iloc[I[0][0]]
 
-                    with col1:
-                        st.image(match['image_path'], caption=match['name'], use_column_width=True)
+                with img_col2:
+                    st.write(f"matched with {match['name']}")
+                    st.image(match['image_path'], use_column_width=True)
 
-                    with col2:
-                        display_card_details(match)
+                # Create two columns for card details and price history chart
+                details_col, chart_col = st.columns(2)
 
-                    # Generate and display price history chart
-                    chart_fig = generate_price_chart(match['name'], card_db)
-                    if chart_fig:
-                        st.plotly_chart(chart_fig, use_container_width=True)
-                    else:
-                        st.warning("⚠️ No price history available.")
-                except Exception as e:
-                    st.error(f"❌ Match failed: {e}")
+                with details_col:
+                    display_card_details(match)
+
+                with chart_col:
+                    try:
+                        chart_fig = generate_price_chart(match['name'], card_db)
+                        if chart_fig:
+                            st.plotly_chart(chart_fig, use_container_width=True)
+                        else:
+                            st.warning("⚠️ No price history available.")
+                    except Exception as e:
+                        st.error(f"❌ Chart generation failed: {e}")
+
+            except Exception as e:
+                st.error(f"❌ Match failed: {e}")
     else:
         st.warning("⚠️ No cards detected. Please try another image.")
