@@ -12,3 +12,4 @@ git+https://github.com/facebookresearch/segment-anything.git
 ftfy
 regex
 tqdm
+transformers
