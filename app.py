@@ -24,9 +24,13 @@ def load_card_db():
 # Update the existing card_db loading logic
 @st.cache_resource
 def load_index():
-    index = faiss.read_index("clip.index")
-    card_db = load_card_db()
-    return index, card_db
+    try:
+        index = faiss.read_index("clip.index")
+        card_db = load_card_db()
+        return index, card_db
+    except FileNotFoundError:
+        st.error("Required files (clip.index or card_db.pkl) are missing. Please upload them.")
+        return None, None
 
 
 # Function to generate an interactive price history chart using Plotly
