@@ -12,6 +12,9 @@ from io import BytesIO
 import pandas as pd
 import json
 
+# Disable Streamlit's file watcher to prevent unnecessary re-runs
+os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
+
 # Load card database with price history and parse JSON
 def load_card_db():
     card_db = pd.read_csv("cards.csv")
