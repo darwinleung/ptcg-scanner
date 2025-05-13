@@ -6,8 +6,25 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import requests
+import sys
+import importlib.util
+import streamlit as st
 
-from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+# Add segment-anything directory to path if it's not installed properly
+if importlib.util.find_spec("segment_anything") is None:
+    segment_anything_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "segment-anything")
+    if os.path.exists(segment_anything_path):
+        sys.path.append(segment_anything_path)
+        print(f"Added {segment_anything_path} to sys.path")
+    else:
+        raise ImportError("segment-anything directory not found. Please install it via pip or place it in the correct location.")
+
+# Now try to import from segment_anything
+try:
+    from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+except ImportError as e:
+    print(f"Error importing segment_anything: {e}")
+    raise
 
 # Visualization function kept for debugging purposes
 
@@ -53,21 +70,45 @@ def download_sam_checkpoint(url, output_path):
                 f.write(chunk)
         print(f"SAM checkpoint saved to {output_path}.")
 
+@st.cache_resource
 def load_sam():
     """
     Initialize SAM model with parameters optimized for Pokemon card segmentation.
+    Streamlit-friendly version with caching.
     """
     sam_checkpoint = "sam_vit_b_01ec64.pth"
     model_type = "vit_b"
 
     # URL to download the SAM checkpoint
-    sam_checkpoint_url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"  # Replace FILE_ID with the actual file ID
+    sam_checkpoint_url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
 
     # Download the checkpoint if it doesn't exist
     download_sam_checkpoint(sam_checkpoint_url, sam_checkpoint)
 
-    sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-    sam.to(device="cpu")
+    # Check if CUDA is available and set device accordingly
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # Try different approaches to load the model
+    try:
+        print(f"Loading SAM model with device={device}")
+        sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+        sam.to(device=device)
+    except Exception as e:
+        print(f"First loading attempt failed: {e}")
+        try:
+            # Try with torch.jit.script disabled
+            torch._C._jit_set_profiling_executor(False)
+            torch._C._jit_set_profiling_mode(False)
+            print("Disabled JIT profiling executor and mode")
+            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+            sam.to(device=device)
+        except Exception as e:
+            print(f"Second loading attempt failed: {e}")
+            # Force CPU as a last resort
+            device = "cpu"
+            print(f"Attempting to load on CPU only")
+            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+            sam.to(device=device)
     
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
@@ -82,7 +123,12 @@ def load_sam():
     )
     return mask_generator
 
-mask_generator = load_sam()
+# Create a singleton instance
+try:
+    mask_generator = load_sam()
+except Exception as e:
+    print(f"Error loading SAM model: {e}")
+    # Provide a fallback or error message
 
 def preprocess_image(pil_img, max_size=1024):
     """

@@ -6,7 +6,6 @@ import pickle
 import faiss
 import os
 from utils import load_clip_model, get_clip_embedding
-from sam_utils import get_card_crops
 import plotly.graph_objects as go
 from io import BytesIO
 import pandas as pd
@@ -14,6 +13,14 @@ import json
 
 # Disable Streamlit's file watcher to prevent unnecessary re-runs
 os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
+
+# Import sam_utils with proper error handling
+try:
+    from sam_utils import get_card_crops
+except ImportError as e:
+    st.error(f"Error importing SAM utilities: {e}")
+    st.info("Installing or fixing SAM dependencies...")
+    # You can add fallback code here if needed
 
 # Load card database with price history and parse JSON
 def load_card_db():
