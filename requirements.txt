@@ -14,4 +14,3 @@ regex
 tqdm
 transformers
 plotly
--e ./segment-anything
