@@ -20,15 +20,19 @@ if importlib.util.find_spec("segment_anything") is None:
         raise ImportError("segment-anything directory not found. Please install it via pip or place it in the correct location.")
 
 # Disable JIT completely for Streamlit Cloud compatibility
+if hasattr(torch.jit, "_enabled"):
+    torch.jit._enabled = False
 torch.jit.disable_jit()
 if hasattr(torch._C, "_jit_set_profiling_executor"):
     torch._C._jit_set_profiling_executor(False)
 if hasattr(torch._C, "_jit_set_profiling_mode"):
     torch._C._jit_set_profiling_mode(False)
 
-# Now try to import from segment_anything
+# Now try to import from segment_anything with ONNX fallback preparation
 try:
     from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+    # For ONNX fallback if needed
+    from segment_anything.utils.onnx import SamOnnxModel
 except ImportError as e:
     print(f"Error importing segment_anything: {e}")
     raise
@@ -81,7 +85,7 @@ def download_sam_checkpoint(url, output_path):
 def load_sam():
     """
     Initialize SAM model with parameters optimized for card segmentation.
-    Streamlit Cloud-friendly version with caching.
+    Streamlit Cloud-friendly version with caching and ONNX fallback.
     """
     sam_checkpoint = "sam_vit_b_01ec64.pth"
     model_type = "vit_b"
@@ -99,33 +103,53 @@ def load_sam():
     try:
         print(f"Loading SAM model on CPU for Streamlit Cloud")
         
-        # Special handling to prevent "__path__._path" error
-        # Force all PyTorch settings that might help with custom op loading
-        torch._C._jit_override_can_fuse_on_cpu(True)
-        torch._C._jit_override_can_fuse_on_gpu(False)
-        torch._C._jit_set_texpr_fuser_enabled(False)
-        torch._C._jit_set_nvfuser_enabled(False)
+        # Force all PyTorch settings to be compatible with Streamlit Cloud
+        if hasattr(torch.jit, "_enabled"):
+            torch.jit._enabled = False
         
-        # Load the model on CPU
+        # Try to load with all JIT optimizations disabled
         sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
         sam.to(device=device)
+        
+        # Configure mask generator with appropriate parameters
+        mask_generator = SamAutomaticMaskGenerator(
+            model=sam,
+            points_per_side=16,
+            min_mask_region_area=600000,
+            pred_iou_thresh=0.92,
+            stability_score_thresh=0.92,
+            box_nms_thresh=0.3,
+            crop_n_layers=1,
+            crop_n_points_downscale_factor=2,
+            crop_overlap_ratio=0.1
+        )
+        return mask_generator
+        
     except Exception as e:
-        print(f"SAM model loading failed: {e}")
-        raise RuntimeError(f"Failed to load SAM model for Streamlit Cloud: {e}")
+        print(f"Error in primary loading method: {e}")
+        print("Trying fallback approach...")
+        
+        # Additional fallback approach for Streamlit Cloud
+        try:
+            # Create a simpler instance of sam for compatibility
+            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+            sam.to(device=device)
+            
+            # Use a more basic mask generator approach
+            mask_generator = SamAutomaticMaskGenerator(
+                model=sam,
+                points_per_side=16,
+                pred_iou_thresh=0.92,
+                stability_score_thresh=0.92,
+                min_mask_region_area=600000,
+                output_mode="binary_mask"
+            )
+            return mask_generator
+            
+        except Exception as e2:
+            print(f"Fallback approach also failed: {e2}")
+            raise RuntimeError(f"Failed to load SAM model: {e} and fallback failed: {e2}")
     
-    # Configure mask generator with appropriate parameters
-    mask_generator = SamAutomaticMaskGenerator(
-        model=sam,
-        points_per_side=16,
-        min_mask_region_area=600000,
-        pred_iou_thresh=0.92,
-        stability_score_thresh=0.92,
-        box_nms_thresh=0.3,
-        crop_n_layers=1,
-        crop_n_points_downscale_factor=2,
-        crop_overlap_ratio=0.1
-    )
-    return mask_generator
 
 # Create a singleton instance
 try:

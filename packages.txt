@@ -4,3 +4,4 @@ libsm6
 libxrender1
 libxext6
 libpython3.10
+libgomp1

@@ -15,17 +15,24 @@ import json
 os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
 
 # Disable PyTorch JIT for Streamlit Cloud compatibility
+if hasattr(torch.jit, "_enabled"):
+    torch.jit._enabled = False
 if hasattr(torch.jit, "disable_jit"):
     torch.jit.disable_jit()
+
+# Explicitly set the directory for the checkpoint file
+MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
+os.environ["SAM_CHECKPOINT_PATH"] = os.path.join(MODEL_DIR, "sam_vit_b_01ec64.pth")
 
 # Import sam_utils with proper error handling
 try:
     from sam_utils import get_card_crops
     sam_loaded = True
+    st.sidebar.success("🎮 SAM model loaded successfully! Automatic card detection available.")
 except Exception as e:
     sam_loaded = False
-    st.error(f"Error loading SAM model: {e}")
-    st.info("Using fallback mode without automatic card detection. Please upload cropped card images.")
+    st.sidebar.error(f"Error loading SAM model: {e}")
+    st.sidebar.info("Using fallback mode without automatic card detection. Please upload cropped card images.")
 
 # Load card database with price history and parse JSON
 def load_card_db():
