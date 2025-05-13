@@ -3,5 +3,5 @@ libglib2.0-0
 libsm6
 libxrender1
 libxext6
-libpython3.10
 libgomp1
+python3-dev
