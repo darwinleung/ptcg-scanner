@@ -69,18 +69,27 @@ def generate_price_chart(card_name, card_db):
     )
     return fig
 
+# Function to display card details in a list style
+def display_card_details(card):
+    st.markdown(f"""
+    **:orange[Card Name]**: {card['name']}  
+    **:orange[Set]**: {card['set']}  
+    **:orange[Current Market Price]**: CAD${card['value']}  
+    **:orange[Condition]**: {card['condition']}  
+    """)
+
 # Load everything at startup
 st.set_page_config(layout="wide")
 st.title("TCG Card Recognition and Matching Tool")
 st.markdown("""
 ### Powered by:
-- **SAM (Segment Anything Model)**: Used for precise segmentation and cropping of cards from the uploaded image.
-- **CLIP (Contrastive Language–Image Pretraining)**: Utilized for generating embeddings to match card images with the database.
-- **FAISS (Facebook AI Similarity Search)**: Enables efficient similarity search to find the closest match in the card database.
+- **:orange[SAM (Segment Anything Model)]**: Used for precise segmentation and cropping of cards from the uploaded image.
+- **:orange[CLIP (Contrastive Language–Image Pretraining)]**: Utilized for generating embeddings to match card images with the database.
+- **:orange[FAISS (Facebook AI Similarity Search)]**: Enables efficient similarity search to find the closest match in the card database.
 
 ### Key Features:
-- **Multi-Item Detection**: Capable of detecting and processing multiple cards in a single image.
-- **Versatile Product Matching**: Supports recognition and matching of various types of trading cards and collectibles.
+- **:orange[Multi-Item Detection]**: Capable of detecting and processing multiple cards in a single image.
+- **:orange[Versatile Product Matching]**: Supports recognition and matching of various types of trading cards and collectibles.
 """)
 
 # @st.cache_resource
@@ -98,7 +107,7 @@ index, card_db = load_index()
 clip_model, clip_processor = load_models()
 
 # Upload image
-uploaded_file = st.file_uploader("Upload an image with multiple cards", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
@@ -144,9 +153,17 @@ if uploaded_file:
                     emb = get_clip_embedding(crop.resize((224, 224)), clip_model, clip_processor)
                     D, I = index.search(np.array([emb], dtype="float32"), k=1)
                     match = card_db.iloc[I[0][0]]
-                    st.success(f"✅ {match['name']} ({match['set']}) - ${match['value']}")
 
-                    # Generate and display interactive price history chart
+                    # Create two columns: one for the mask image and one for the card details
+                    col1, col2 = st.columns([1, 2])
+
+                    with col1:
+                        st.image(match['image_path'], caption=match['name'], use_column_width=True)
+
+                    with col2:
+                        display_card_details(match)
+
+                    # Generate and display price history chart
                     chart_fig = generate_price_chart(match['name'], card_db)
                     if chart_fig:
                         st.plotly_chart(chart_fig, use_container_width=True)
