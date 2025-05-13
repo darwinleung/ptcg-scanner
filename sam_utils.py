@@ -4,6 +4,8 @@ from PIL import Image
 import torchvision.transforms as T
 import cv2
 import matplotlib.pyplot as plt
+import os
+import requests
 
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
@@ -41,12 +43,28 @@ def visualize_masks(image, masks, title="Masks", save_path=None, filter_info=Non
         plt.show()
 
 
+def download_sam_checkpoint(url, output_path):
+    """Download the SAM checkpoint file if it doesn't exist."""
+    if not os.path.exists(output_path):
+        print(f"Downloading SAM checkpoint from {url}...")
+        response = requests.get(url, stream=True)
+        with open(output_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        print(f"SAM checkpoint saved to {output_path}.")
+
 def load_sam():
     """
     Initialize SAM model with parameters optimized for Pokemon card segmentation.
     """
     sam_checkpoint = "sam_vit_b_01ec64.pth"
     model_type = "vit_b"
+
+    # URL to download the SAM checkpoint
+    sam_checkpoint_url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"  # Replace FILE_ID with the actual file ID
+
+    # Download the checkpoint if it doesn't exist
+    download_sam_checkpoint(sam_checkpoint_url, sam_checkpoint)
 
     sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
     sam.to(device="cpu")
