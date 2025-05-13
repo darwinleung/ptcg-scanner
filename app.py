@@ -14,13 +14,18 @@ import json
 # Disable Streamlit's file watcher to prevent unnecessary re-runs
 os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
 
+# Disable PyTorch JIT for Streamlit Cloud compatibility
+if hasattr(torch.jit, "disable_jit"):
+    torch.jit.disable_jit()
+
 # Import sam_utils with proper error handling
 try:
     from sam_utils import get_card_crops
-except ImportError as e:
-    st.error(f"Error importing SAM utilities: {e}")
-    st.info("Installing or fixing SAM dependencies...")
-    # You can add fallback code here if needed
+    sam_loaded = True
+except Exception as e:
+    sam_loaded = False
+    st.error(f"Error loading SAM model: {e}")
+    st.info("Using fallback mode without automatic card detection. Please upload cropped card images.")
 
 # Load card database with price history and parse JSON
 def load_card_db():

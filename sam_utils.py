@@ -19,6 +19,13 @@ if importlib.util.find_spec("segment_anything") is None:
     else:
         raise ImportError("segment-anything directory not found. Please install it via pip or place it in the correct location.")
 
+# Disable JIT completely for Streamlit Cloud compatibility
+torch.jit.disable_jit()
+if hasattr(torch._C, "_jit_set_profiling_executor"):
+    torch._C._jit_set_profiling_executor(False)
+if hasattr(torch._C, "_jit_set_profiling_mode"):
+    torch._C._jit_set_profiling_mode(False)
+
 # Now try to import from segment_anything
 try:
     from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
@@ -73,8 +80,8 @@ def download_sam_checkpoint(url, output_path):
 @st.cache_resource
 def load_sam():
     """
-    Initialize SAM model with parameters optimized for Pokemon card segmentation.
-    Streamlit-friendly version with caching.
+    Initialize SAM model with parameters optimized for card segmentation.
+    Streamlit Cloud-friendly version with caching.
     """
     sam_checkpoint = "sam_vit_b_01ec64.pth"
     model_type = "vit_b"
@@ -85,31 +92,28 @@ def load_sam():
     # Download the checkpoint if it doesn't exist
     download_sam_checkpoint(sam_checkpoint_url, sam_checkpoint)
 
-    # Check if CUDA is available and set device accordingly
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Always use CPU for Streamlit Cloud
+    device = "cpu"
     
-    # Try different approaches to load the model
+    # Try loading with specific error handling for Streamlit Cloud
     try:
-        print(f"Loading SAM model with device={device}")
+        print(f"Loading SAM model on CPU for Streamlit Cloud")
+        
+        # Special handling to prevent "__path__._path" error
+        # Force all PyTorch settings that might help with custom op loading
+        torch._C._jit_override_can_fuse_on_cpu(True)
+        torch._C._jit_override_can_fuse_on_gpu(False)
+        torch._C._jit_set_texpr_fuser_enabled(False)
+        torch._C._jit_set_nvfuser_enabled(False)
+        
+        # Load the model on CPU
         sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
         sam.to(device=device)
     except Exception as e:
-        print(f"First loading attempt failed: {e}")
-        try:
-            # Try with torch.jit.script disabled
-            torch._C._jit_set_profiling_executor(False)
-            torch._C._jit_set_profiling_mode(False)
-            print("Disabled JIT profiling executor and mode")
-            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-            sam.to(device=device)
-        except Exception as e:
-            print(f"Second loading attempt failed: {e}")
-            # Force CPU as a last resort
-            device = "cpu"
-            print(f"Attempting to load on CPU only")
-            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-            sam.to(device=device)
+        print(f"SAM model loading failed: {e}")
+        raise RuntimeError(f"Failed to load SAM model for Streamlit Cloud: {e}")
     
+    # Configure mask generator with appropriate parameters
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
         points_per_side=16,
@@ -128,7 +132,8 @@ try:
     mask_generator = load_sam()
 except Exception as e:
     print(f"Error loading SAM model: {e}")
-    # Provide a fallback or error message
+    # We don't want to create a fallback here, as it might hide errors
+    # Let the error propagate to show in the Streamlit UI
 
 def preprocess_image(pil_img, max_size=1024):
     """
