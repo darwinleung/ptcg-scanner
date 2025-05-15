@@ -84,14 +84,14 @@ def display_card_details(card):
 st.set_page_config(layout="wide")
 st.title("TCG Card Recognition and Matching Tool")
 st.markdown("""
+### Key Features:
+- **:orange[Multi-Item Detection]**: Capable of detecting and processing multiple cards in a single image.
+- **:orange[Versatile Product Matching]**: Supports recognition and matching of various types of trading cards and collectibles.            
+
 ### Powered by:
 - **:orange[SAM (Segment Anything Model)]**: Used for precise segmentation and cropping of cards from the uploaded image.
 - **:orange[CLIP (Contrastive Language–Image Pretraining)]**: Utilized for generating embeddings to match card images with the database.
 - **:orange[FAISS (Facebook AI Similarity Search)]**: Enables efficient similarity search to find the closest match in the card database.
-
-### Key Features:
-- **:orange[Multi-Item Detection]**: Capable of detecting and processing multiple cards in a single image.
-- **:orange[Versatile Product Matching]**: Supports recognition and matching of various types of trading cards and collectibles.
 """)
 
 # @st.cache_resource
@@ -108,16 +108,25 @@ def load_models():
 index, card_db = load_index()
 clip_model, clip_processor = load_models()
 
-# Upload image
-uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+# Replace the radio button with a segment control for input method selection
+st.markdown("#### Choose an input method")
+input_method = st.selectbox("Select input method:", ("Upload Image", "Use Camera"))
 
-if uploaded_file:
-    image = Image.open(uploaded_file).convert("RGB")
+if input_method == "Upload Image":
+    uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+    if uploaded_file:
+        image = Image.open(uploaded_file).convert("RGB")
 
-    # Display the uploaded image
+elif input_method == "Use Camera":
+    camera_image = st.camera_input("Take a picture")
+    if camera_image:
+        image = Image.open(camera_image).convert("RGB")
+
+if 'image' in locals():
+    # Display the captured or uploaded image
     cols = st.columns(2)
     with cols[0]:
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+        st.image(image, caption="Input Image", use_column_width=True)
 
     # Segment and crop cards using SAM
     with cols[1]:
