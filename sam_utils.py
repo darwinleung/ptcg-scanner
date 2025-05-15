@@ -20,9 +20,12 @@ if importlib.util.find_spec("segment_anything") is None:
         raise ImportError("segment-anything directory not found. Please install it via pip or place it in the correct location.")
 
 # Disable JIT completely for Streamlit Cloud compatibility
+# Fix for PyTorch JIT compatibility
 if hasattr(torch.jit, "_enabled"):
     torch.jit._enabled = False
-torch.jit.disable_jit()
+# Replace the direct call with a conditional check
+if hasattr(torch.jit, "disable_jit"):
+    torch.jit.disable_jit()
 if hasattr(torch._C, "_jit_set_profiling_executor"):
     torch._C._jit_set_profiling_executor(False)
 if hasattr(torch._C, "_jit_set_profiling_mode"):
