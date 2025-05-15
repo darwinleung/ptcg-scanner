@@ -1,23 +1,45 @@
-import streamlit as st
-from PIL import Image
-import torch
-import numpy as np
-import pickle
-import faiss
-import os
-from utils import load_clip_model, get_clip_embedding
-import plotly.graph_objects as go
-from io import BytesIO
-import pandas as pd
-import json
 import sys
+import os
 
-# Fix for torch.compiler error with transformers 4.51.3
+# Fix torch.compiler before any imports
+import torch
 if not hasattr(torch, "compiler"):
     class MockCompiler:
         def __init__(self):
             self.compile = lambda *args, **kwargs: args[0] if args else None
+            self.cudagraph = False
     torch.compiler = MockCompiler()
+
+# Mock dynamo if needed
+if not hasattr(torch, "_dynamo"):
+    class MockDynamo:
+        def __init__(self):
+            self.is_compiling = lambda: False
+            self.reset = lambda: None
+            self.optimize = lambda *args, **kwargs: args[0] if args else None
+    torch._dynamo = MockDynamo()
+
+import numpy as np
+import pickle
+import faiss
+import plotly.graph_objects as go
+from io import BytesIO
+import pandas as pd
+import json
+import streamlit as st
+from PIL import Image
+
+# Very first Streamlit command must be set_page_config
+st.set_page_config(
+    page_title="TCG Card Recognition",
+    page_icon="🎮",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Now import your other modules which might also use streamlit
+from utils import load_clip_model, get_clip_embedding
+from sam_utils import get_card_crops
 
 # Disable Streamlit's file watcher to prevent unnecessary re-runs
 os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
