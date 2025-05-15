@@ -10,6 +10,14 @@ import plotly.graph_objects as go
 from io import BytesIO
 import pandas as pd
 import json
+import sys
+
+# Fix for torch.compiler error with transformers 4.51.3
+if not hasattr(torch, "compiler"):
+    class MockCompiler:
+        def __init__(self):
+            self.compile = lambda *args, **kwargs: args[0] if args else None
+    torch.compiler = MockCompiler()
 
 # Disable Streamlit's file watcher to prevent unnecessary re-runs
 os.environ["STREAMLIT_WATCH_FILE_SYSTEM"] = "false"
