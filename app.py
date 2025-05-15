@@ -137,7 +137,6 @@ def display_card_details(card):
     st.markdown(f"<span style='color: orange; font-weight: bold;'>Condition:</span> {card['condition']}", unsafe_allow_html=True)
 
 # Load everything at startup
-st.set_page_config(layout="wide")
 st.title("TCG Card Recognition and Matching Tool")
 st.markdown("""
 ### Powered by:
