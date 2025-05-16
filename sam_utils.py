@@ -4,8 +4,17 @@ from PIL import Image
 import torchvision.transforms as T
 import cv2
 import matplotlib.pyplot as plt
+import os
+import sys
 
-from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+# Import our download utilities
+from download_models import download_sam_model, ensure_segment_anything
+
+# Ensure segment_anything is available before importing
+if ensure_segment_anything():
+    from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+else:
+    raise ImportError("Failed to import segment_anything. Please run download_models.py first.")
 
 # Visualization function kept for debugging purposes
 
@@ -44,9 +53,10 @@ def visualize_masks(image, masks, title="Masks", save_path=None, filter_info=Non
 def load_sam():
     """
     Initialize SAM model with parameters optimized for Pokemon card segmentation.
+    Automatically downloads the model file if it doesn't exist.
     """
-    sam_checkpoint = "sam_vit_b_01ec64.pth"
     model_type = "vit_b"
+    sam_checkpoint = download_sam_model(model_type)
 
     sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
     sam.to(device="cpu")

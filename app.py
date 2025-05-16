@@ -5,12 +5,33 @@ import numpy as np
 import pickle
 import faiss
 import os
+import sys
 from utils import load_clip_model, get_clip_embedding
+from download_models import ensure_segment_anything, download_sam_model
 from sam_utils import get_card_crops
 import plotly.graph_objects as go
 from io import BytesIO
 import pandas as pd
 import json
+
+# This must be the first Streamlit command
+st.set_page_config(layout="wide")
+
+# Initialize models on startup
+@st.cache_resource
+def initialize_models():
+    # Ensure segment_anything is available
+    if not ensure_segment_anything():
+        st.error("Failed to load segment_anything. Please check your installation.")
+        return False
+    
+    # Download SAM model if needed
+    model_path = download_sam_model("vit_b")
+    if not model_path or not os.path.exists(model_path):
+        st.error(f"Failed to download SAM model. Please check your internet connection and try again.")
+        return False
+    
+    return True
 
 # Load card database with price history and parse JSON
 def load_card_db():
@@ -80,8 +101,9 @@ def display_card_details(card):
     st.markdown(f"<span style='color: orange; font-weight: bold;'>Current Market Price:</span> CAD$ {card['value']}", unsafe_allow_html=True)
     st.markdown(f"<span style='color: orange; font-weight: bold;'>Condition:</span> {card['condition']}", unsafe_allow_html=True)
 
-# Load everything at startup
-st.set_page_config(layout="wide")
+# Initialize models first
+initialize_models()
+
 st.title("TCG Card Recognition and Matching Tool")
 st.markdown("""
 ### Key Features:
@@ -93,13 +115,6 @@ st.markdown("""
 - **:orange[CLIP (Contrastive Language–Image Pretraining)]**: Utilized for generating embeddings to match card images with the database.
 - **:orange[FAISS (Facebook AI Similarity Search)]**: Enables efficient similarity search to find the closest match in the card database.
 """)
-
-# @st.cache_resource
-# def load_index():
-#     index = faiss.read_index("clip.index")
-#     with open("card_db.pkl", "rb") as f:
-#         card_db = pickle.load(f)
-#     return index, card_db
 
 @st.cache_resource
 def load_models():
